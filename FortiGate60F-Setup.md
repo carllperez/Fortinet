@@ -120,7 +120,6 @@ After the reset and first login, verify the factory-default interface configurat
 show system interface
 ```
 
-The next configuration stage will identify the factory-default internal switch membership before assigning the lab addresses to `wan1` and `internal1`.
 
 ## Troubleshooting
 
