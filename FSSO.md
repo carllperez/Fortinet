@@ -14,6 +14,8 @@ Fortinet Single Sign-On (FSSO) learns that a user logged onto a Windows workstat
 
 This guide uses FortiGate local AD polling because it requires no Windows Collector Agent software. It also explains Collector Agent and Domain Controller Agent modes so the deployment choices are clear.
 
+> **Day 1 Cisco prerequisite:** If the Windows client uses `10.~~.10.10/24`, configure and verify `COREtaas-~~` and `COREbaba-~~` with [VLAN.md](VLAN.md) first. The FortiGate must have a working route back to VLAN 10.
+
 > Replace `~~` with the student's monitor number. Example: monitor 61 gives Windows client `10.61.10.10`.
 
 ## Components and software requirements
@@ -31,6 +33,7 @@ Collector/DC Agent installers must be obtained from an authorized Fortinet downl
 - Working `LDAP-Active-Directory.md` configuration
 - Domain-joined Windows client `10.~~.10.10/24`, gateway `10.~~.10.4`
 - Domain controller `10.~~.~~.10`
+- Cisco `COREbaba` routes VLAN 10 to FortiGate `internal1`, and the FortiGate has a route back through `10.~~.~~.4`
 - A test AD group such as `FortiGate-Internet`
 - FortiGate polling credentials permitted to read required Windows security log/RPC information and LDAP group membership
 - Windows audit/logon events enabled and time synchronized
@@ -69,7 +72,7 @@ Under **Policy & Objects > Firewall Policy**, create:
 
 | Field | Value |
 |---|---|
-| Incoming Interface | `PC-VLAN10` |
+| Incoming Interface | `internal1` |
 | Outgoing Interface | `wan1` |
 | Source Address | `10.~~.10.0/24` |
 | Source User/Group | `FSSO-Internet` |
@@ -79,6 +82,8 @@ Under **Policy & Objects > Firewall Policy**, create:
 | Logging | All Sessions |
 
 Place this above a broad unauthenticated allow policy. Log off and back onto the domain from the test workstation so a fresh event is generated.
+
+The client is behind the Cisco VLAN 10 SVI, but its traffic reaches the FortiGate on `internal1`; a policy using `PC-VLAN10` will not match the Day 1 routed-core topology.
 
 ## Collector Agent mode (alternative)
 

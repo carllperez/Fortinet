@@ -12,17 +12,20 @@
 
 BGP exchanges IP prefixes between autonomous systems. This lab uses private ASNs: the FortiGate is AS `65001`, the Cisco router is AS `65002`, and they peer across one directly connected `/30` link.
 
+> **Scope:** The supplied Day 1 switching notes use OSPF between FortiGate and Cisco `COREbaba`; they do not define BGP. This is a separate routing exercise with a dedicated Cisco BGP peer. Do not paste this BGP configuration onto `COREbaba` unless the instructor explicitly assigns that role.
+
+> `COREtaas-~~` and `COREbaba-~~` are required only when this BGP lab advertises or tests the Day 1 student-PC VLAN. The standalone `/30` BGP peer itself does not require the collapsed-backbone switches.
+
 > Replace `~~` with the student's monitor number throughout. Example: monitor 61 gives student PC `10.61.10.10`.
 
 ## Topology
 
 ```text
-FortiGate PC LAN                                           Cisco LAN
-10.~~.10.0/24                                            10.~~.20.0/24
-PC 10.~~.10.10
-      |                                                       |
-[ FortiGate ] 10.~~.255.1/30 ─────── 10.~~.255.2/30 [ Cisco router ]
-   AS 65001                                              AS 65002
+PC 10.~~.10.10 -- VLAN 10 [ COREbaba ] -- [ FortiGate AS 65001 ]
+                                               |
+                                      dedicated BGP /30
+                                               |
+                               [ Cisco BGP peer AS 65002 ] -- 10.~~.20.0/24
 ```
 
 | Setting | FortiGate | Cisco peer |
@@ -32,18 +35,21 @@ PC 10.~~.10.10
 | Neighbor | `10.~~.255.2` | `10.~~.255.1` |
 | Advertised prefix | `10.~~.10.0/24` | `10.~~.20.0/24` |
 
-The standard FortiGate-side student PC is `10.~~.10.10/24`, normally using gateway `10.~~.10.4` when the VLAN design from `VLAN.md` is used.
+The standard FortiGate-side student PC is `10.~~.10.10/24`, using Cisco `COREbaba` gateway `10.~~.10.4` when the design from [VLAN.md](VLAN.md) is used. Before BGP can advertise that exact prefix, the FortiGate must already have `10.~~.10.0/24` in its routing table through OSPF or a static route to `COREbaba`.
 
 ## Prerequisites
 
 - The transit interfaces can ping one another
 - Each advertised prefix exists in the local routing table
+- The dedicated BGP peer link is separate from the FortiGate-to-`COREbaba` Day 1 link
 - Transit firewall policies are ready for endpoint testing, with NAT off
 - No other router uses AS `65001` or `65002` in the same lab design
 
 ## Configuration
 
 ### Step 1 — Configure FortiGate BGP
+
+Address a dedicated FortiGate routed interface as `10.~~.255.1/30` and the Cisco peer interface as `10.~~.255.2/30`. Replace `<bgp-interface>` below with that FortiGate interface name; do not reuse `internal1`, which belongs to the `COREbaba` adjacency in the Day 1 topology.
 
 If **Network > BGP** is hidden, enable Advanced Routing in **System > Feature Visibility**. Under **Network > BGP**:
 
@@ -135,7 +141,7 @@ When several BGP paths exist, FortiGate compares BGP attributes before installin
 Useful capture:
 
 ```shell
-diagnose sniffer packet internal1 'host 10.~~.255.2 and tcp port 179' 4 20 l
+diagnose sniffer packet <bgp-interface> 'host 10.~~.255.2 and tcp port 179' 4 20 l
 ```
 
 ## Notes

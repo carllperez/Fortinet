@@ -14,12 +14,14 @@ FortiGate LDAP integration binds to Active Directory, searches for users/groups,
 
 All domain values below are examples.
 
+> **Day 1 Cisco prerequisite:** If the Windows client uses the Day 1 VLAN 10 network, configure and verify `COREtaas-~~` and `COREbaba-~~` with [VLAN.md](VLAN.md) first. Confirm FortiGate routing to both the client and domain controller before testing LDAP policy authentication.
+
 > Replace `~~` with the student's monitor number. Example: monitor 61 gives Windows client `10.61.10.10`.
 
 ## Topology and example values
 
 ```text
-Windows client 10.~~.10.10 ── PC-VLAN10 [ FortiGate ] ── Windows Server / Domain Controller
+Windows client 10.~~.10.10 ── VLAN 10 [ COREbaba ] ── internal1 [ FortiGate ] ── DC 10.~~.~~.10
 ```
 
 | Item | Example |
@@ -36,6 +38,7 @@ Windows client 10.~~.10.10 ── PC-VLAN10 [ FortiGate ] ── Windows Server 
 ## Prerequisites
 
 - FortiGate can route to and resolve/reach the domain controller
+- The FortiGate has an OSPF or static route to the client VLAN through Cisco `COREbaba` at `10.~~.~~.4`
 - AD user and group already exist
 - A least-privilege bind account can read the required directory tree
 - Time is synchronized
@@ -81,7 +84,7 @@ Under **Policy & Objects > Firewall Policy**, create a narrow authenticated inte
 
 | Field | Value |
 |---|---|
-| Incoming Interface | `PC-VLAN10` |
+| Incoming Interface | `internal1` |
 | Outgoing Interface | `wan1` |
 | Source Address | `10.~~.10.0/24` |
 | Source User/Group | `AD-FortiGate-Internet` |
@@ -91,6 +94,8 @@ Under **Policy & Objects > Firewall Policy**, create a narrow authenticated inte
 | Logging | All Sessions |
 
 Place it above any broad unauthenticated allow policy. When a new supported connection is attempted, FortiGate should present authentication and validate the user against AD.
+
+In the Day 1 Cisco topology, the PC's gateway is the `COREbaba` VLAN 10 SVI, so its sessions enter the FortiGate on `internal1`. Do not use a nonexistent FortiGate `PC-VLAN10` interface in this policy.
 
 ## Verification
 

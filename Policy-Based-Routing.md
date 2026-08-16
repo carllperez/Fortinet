@@ -12,7 +12,9 @@
 
 Normal routing selects a path mainly from the destination address. A policy route can additionally match incoming interface, source, destination, protocol, or destination port and force a usable gateway/interface. FortiGate checks policy routes from top to bottom; if none matches, it uses the normal routing table.
 
-This lab sends guest web traffic through `wan2` while all other PC traffic follows `wan1`.
+This lab sends the standard student PC's web traffic through `wan2` while its other traffic follows `wan1`.
+
+> **Day 1 Cisco prerequisite:** Configure and verify `COREtaas-~~` and `COREbaba-~~` with [VLAN.md](VLAN.md) first. The student PC must reach the FortiGate through `COREbaba` and `internal1` before policy routing can match it.
 
 > If the WANs are already members of `virtual-wan-link`, complete `SDWAN.md` and use SD-WAN rules for health-aware steering. Do not build this lab by pulling live interfaces out of SD-WAN.
 >
@@ -22,12 +24,12 @@ This lab sends guest web traffic through `wan2` while all other PC traffic follo
 
 | Item | Value |
 |---|---|
-| PC source | `10.~~.10.0/24` on `PC-VLAN10`; student PC `10.~~.10.10` |
-| Guest source | `10.~~.20.0/24` on `GUEST-VLAN20` |
+| PC source | `10.~~.10.0/24` behind Cisco `COREbaba`; student PC `10.~~.10.10` |
+| FortiGate ingress | `internal1`; Cisco next hop `10.~~.~~.4` |
 | `wan1` | `200.0.0.~~/24`, gateway `200.0.0.1` |
 | `wan2` | `201.0.0.~~/24`, gateway `201.0.0.1` |
 | Normal default | `wan1` |
-| Policy-routed traffic | Guest TCP 80/443 through `wan2` |
+| Policy-routed traffic | Student PC TCP 80/443 through `wan2` |
 
 ## Prerequisites
 
@@ -36,6 +38,7 @@ This lab sends guest web traffic through `wan2` while all other PC traffic follo
 - A default route exists through `wan1`
 - A route through `wan2` exists and is active enough to resolve `201.0.0.1`
 - Matching firewall policies and NAT exist for both possible egress interfaces
+- FortiGate has an OSPF or static route to `10.~~.10.0/24` through `10.~~.~~.4`
 
 ## Configuration
 
@@ -43,7 +46,7 @@ This lab sends guest web traffic through `wan2` while all other PC traffic follo
 
 Under **Network > Static Routes**, keep the primary default through `wan1`. Add a second default through `wan2` with a higher distance, such as `20`. The backup may not be the normal best route, but it makes the `wan2` gateway resolvable for the policy route.
 
-### Step 2 — Create the source-based web policy route
+### Step 2 — Create the student-PC web policy route
 
 1. Go to **Network > Policy Routes**.
 2. Click **Create New > Policy Route**.
@@ -51,8 +54,8 @@ Under **Network > Static Routes**, keep the primary default through `wan1`. Add 
 
 | Field | Value |
 |---|---|
-| Incoming interface | `GUEST-VLAN20` |
-| Source address | `10.~~.20.0/255.255.255.0` |
+| Incoming interface | `internal1` |
+| Source address | `10.~~.10.10/255.255.255.255` |
 | Destination address | `0.0.0.0/0.0.0.0` |
 | Protocol | TCP (`6`) |
 | Destination ports | `80–80` for the first rule |
@@ -62,7 +65,7 @@ Under **Network > Static Routes**, keep the primary default through `wan1`. Add 
 4. Create a second adjacent rule for destination port `443`.
 5. Place both above broader policy routes.
 
-> **Screenshot:** Network > Policy Routes showing the guest HTTP and HTTPS rules above any general rule.
+> **Screenshot:** Network > Policy Routes showing the student-PC HTTP and HTTPS rules above any general rule.
 
 This demonstrates source-, protocol-, and service-based matching together. A destination-based example would replace `0.0.0.0/0` with a specific remote subnet.
 
@@ -72,8 +75,8 @@ Under **Policy & Objects > Firewall Policy**, create or confirm:
 
 | Name | Incoming | Outgoing | Source | Destination | NAT |
 |---|---|---|---|---|---|
-| `Guest-to-wan2` | `GUEST-VLAN20` | `wan2` | `GUEST-NET` | `all` | On |
-| `PC-to-wan1` | `PC-VLAN10` | `wan1` | `PC-NET` | `all` | On |
+| `Lab-PC-to-wan2` | `internal1` | `wan2` | `Lab-PC` | `all` | On |
+| `PC-to-wan1` | `internal1` | `wan1` | `PC-NET` | `all` | On |
 
 Routing and firewall policy are separate decisions. If the policy route selects `wan2` but only a `wan1` policy exists, the session is denied.
 
@@ -85,13 +88,13 @@ get router info routing-table all
 diagnose sniffer packet wan2 'tcp port 80 or tcp port 443' 4 20 l
 ```
 
-From a guest client, open a new HTTP/HTTPS session and observe it on `wan2`. Use a new session after each change; an established session keeps its original route.
+From the student PC, open a new HTTP/HTTPS session and observe it on `wan2`. Use a new session after each change; an established session keeps its original route.
 
 For flow debugging, filter narrowly:
 
 ```shell
 diagnose debug reset
-diagnose debug flow filter saddr 10.~~.20.100
+diagnose debug flow filter saddr 10.~~.10.10
 diagnose debug flow trace start 20
 diagnose debug enable
 ```

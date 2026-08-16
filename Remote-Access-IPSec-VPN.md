@@ -14,6 +14,8 @@ This lab builds a dial-up, route-based IPsec VPN. The FortiGate does not know th
 
 This differs from `SSLVPN.md`: IPsec uses IKE/IPsec (normally UDP 500 and 4500), a pre-shared key, and phase 1/phase 2 negotiation. SSL VPN uses TLS on the configured SSL-VPN port and an SSL-VPN portal. Both can use the same local users, but their tunnel objects, client profiles, and firewall policies are separate.
 
+> **Day 1 Cisco prerequisite:** To include the student PC VLAN in remote access, configure and verify `COREtaas-~~` and `COREbaba-~~` with [VLAN.md](VLAN.md) first, then confirm the FortiGate route to `10.~~.10.0/24` through `10.~~.~~.4`.
+
 > Replace `~~` with the student's monitor number throughout. Example: monitor 61 gives student PC `10.61.10.10`, LAN `10.61.61.0/24`, and WAN `200.0.0.61`.
 
 ## Prerequisites
@@ -36,7 +38,7 @@ This differs from `SSLVPN.md`: IPsec uses IKE/IPsec (normally UDP 500 and 4500),
 | IKE | IKEv2 where the installed FortiClient supports it |
 | Tunnel mode | Split tunnel to `10.~~.~~.0/24` |
 
-The standard student PC `10.~~.10.10` is on `10.~~.10.0/24`, separate from the protected LAN in this base example. To reach that PC through IPsec, also include the `PC-NET-~~` address in split-tunnel routing and use the real PC VLAN/interface in the VPN-to-LAN firewall policy.
+The standard student PC `10.~~.10.10` is on `10.~~.10.0/24`, separate from the protected LAN in this base example. To reach that PC through IPsec, also include a `PC-NET-~~` object (`10.~~.10.0/24`) in split-tunnel routing. In the Day 1 Cisco design, the VPN-to-PC policy still uses outgoing interface `internal1`, because `COREbaba` routes VLAN 10 behind that link. Confirm the FortiGate route points through `10.~~.~~.4`.
 
 ```text
 Remote FortiClient ── Internet/lab WAN ── wan1 [ FortiGate ] internal1 ── LAN
@@ -112,7 +114,7 @@ The wizard should create a policy similar to:
 | NAT | Off when LAN devices route replies to the FortiGate |
 | Logging | All Sessions |
 
-NAT is normally off because the client pool is routed through the FortiGate. If a downstream LAN router has no route back to `10.~~.250.0/24`, add that route. Using NAT is a workable lab shortcut, but it hides the real VPN client address from LAN devices.
+NAT is normally off because the client pool is routed through the FortiGate. If Cisco `COREbaba` has no route back to `10.~~.250.0/24`, add `ip route 10.~~.250.0 255.255.255.0 10.~~.~~.1`. Using NAT is a workable lab shortcut, but it hides the real VPN client address from LAN devices.
 
 ### Step 6 — Configure FortiClient
 

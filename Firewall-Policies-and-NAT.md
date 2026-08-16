@@ -12,10 +12,13 @@
 
 A FortiGate policy answers: which traffic may enter on this interface and leave on that interface? Policies are evaluated in displayed order, from top to bottom. The first complete match determines the action. If no policy matches, traffic is denied implicitly.
 
+> **Day 1 Cisco prerequisite:** Configure and verify `COREtaas-~~` and `COREbaba-~~` with [VLAN.md](VLAN.md) first. Student-PC traffic is routed by `COREbaba` and enters the FortiGate on `internal1`.
+
 > Replace `~~` with the student's monitor number. Example: monitor 61 gives student PC `10.61.10.10`.
 
 ```text
-PC 10.~~.10.10 ── PC-VLAN10 [ FortiGate ] wan1 ── upstream gateway
+PC 10.~~.10.10 ── VLAN 10 [ COREbaba ] ── internal1 [ FortiGate ] wan1 ── upstream
+gateway 10.~~.10.4                routed link
 ```
 
 ## Network overview
@@ -24,11 +27,12 @@ PC 10.~~.10.10 ── PC-VLAN10 [ FortiGate ] wan1 ── upstream gateway
 |---|---|
 | PC network | `10.~~.10.0/24` |
 | Student PC | `10.~~.10.10/24`, gateway `10.~~.10.4` |
-| FortiGate PC gateway | `10.~~.10.4` on `PC-VLAN10` |
+| PC gateway | `10.~~.10.4` on Cisco `COREbaba` VLAN 10 |
+| FortiGate inside interface | `10.~~.~~.1/24` on `internal1` |
 | WAN | `200.0.0.~~/24` on `wan1` |
 | WAN gateway | `200.0.0.1` |
 
-This guide uses the PC VLAN from `VLAN.md`. If you are building the firewall-policy lab first, create `PC-VLAN10` and place the PC-facing switch port in VLAN 10 before testing.
+This guide uses the Cisco routed-core design from [VLAN.md](VLAN.md). `COREbaba` routes VLAN 10 toward FortiGate `internal1`, so the FortiGate must have an OSPF or static route to `10.~~.10.0/24` through `10.~~.~~.4`.
 
 ## Policy fields in plain language
 
@@ -60,7 +64,7 @@ Go to **Policy & Objects > Firewall Policy**, click **Create New**, and set:
 | Field | Value |
 |---|---|
 | Name | `PC-to-WAN` |
-| Incoming Interface | `PC-VLAN10` |
+| Incoming Interface | `internal1` |
 | Outgoing Interface | `wan1` |
 | Source | `PC-NET-~~` |
 | Destination | `all` |
@@ -70,7 +74,7 @@ Go to **Policy & Objects > Firewall Policy**, click **Create New**, and set:
 | NAT | Enabled, Use Outgoing Interface Address |
 | Log Allowed Traffic | All Sessions |
 
-> **Screenshot:** New Policy showing `PC-VLAN10` to `wan1`, NAT enabled, and logging enabled.
+> **Screenshot:** New Policy showing `internal1` to `wan1`, NAT enabled, and logging enabled.
 
 Outgoing-interface NAT changes `10.~~.10.10` to the address on `wan1` and tracks a translated source port. Replies are mapped back to the original PC session.
 
@@ -130,6 +134,7 @@ Look for the selected policy ID, route, and SNAT decision.
 | Symptom | Cause | Fix |
 |---|---|---|
 | Policy shows zero bytes | Incoming/outgoing interface, source, destination, service, or policy order does not match | Use a flow trace and compare every packet field |
+| Policy expects `PC-VLAN10` and shows zero bytes | In the Cisco routed-core design, traffic enters on `internal1` | Change the policy's incoming interface to `internal1` |
 | FortiGate can browse/ping but PC cannot | Local-out traffic does not use the transit policy | Fix the `PC-to-WAN` policy, client gateway, and NAT |
 | PC reaches IP addresses but not names | DNS service is missing or client DNS is wrong | Permit DNS to the configured resolver and renew client settings |
 | Private source appears on WAN | NAT is off or a central-NAT design overrides expectations | Enable policy NAT using outgoing-interface address for this lab |

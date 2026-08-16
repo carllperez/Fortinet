@@ -12,6 +12,8 @@
 
 Connected routes appear automatically when an addressed interface is up. Static routes are administrator-created instructions for destinations behind another router. A default route (`0.0.0.0/0`) is the least-specific route and is used only when no more-specific route matches.
 
+> **Day 1 Cisco prerequisite:** When using the supplied Cisco topology, configure and verify `COREtaas-~~` and `COREbaba-~~` with [VLAN.md](VLAN.md) first. This lab uses `COREbaba` as the downstream router at `10.~~.~~.4`.
+
 > Replace `~~` with the student's monitor number throughout. Example: monitor 61 gives student PC `10.61.10.10`.
 
 ## Topology
@@ -22,7 +24,7 @@ Internet router 200.0.0.1
 wan1 200.0.0.~~/24
     [ FortiGate ] internal1 10.~~.~~.1/24
           |
-  lab router 10.~~.~~.254
+  Cisco COREbaba 10.~~.~~.4
           |
   PC network 10.~~.10.0/24
   gateway 10.~~.10.4 ── student PC 10.~~.10.10
@@ -31,7 +33,7 @@ wan1 200.0.0.~~/24
 | Route | Gateway | Interface | Purpose |
 |---|---|---|---|
 | `10.~~.~~.0/24` | Connected | `internal1` | Local LAN |
-| `10.~~.10.0/24` | `10.~~.~~.254` | `internal1` | Student PC network |
+| `10.~~.10.0/24` | `10.~~.~~.4` | `internal1` | Student PC network behind `COREbaba` |
 | `0.0.0.0/0` | `200.0.0.1` | `wan1` | All other destinations |
 
 ## Configuration
@@ -51,16 +53,16 @@ If an interface is administratively up but the physical link is down, its connec
 1. Go to **Network > Static Routes**.
 2. Click **Create New**.
 3. Set Destination to `10.~~.10.0/255.255.255.0`.
-4. Set Gateway to `10.~~.~~.254`.
+4. Set Gateway to `10.~~.~~.4`.
 5. Set Interface to `internal1`.
 6. Leave Administrative Distance at `10` and Priority at `0` for this single-path lab.
 7. Save the route.
 
-> **Screenshot:** Static route to student PC network `10.~~.10.0/24` through the lab router.
+> **Screenshot:** Static route to student PC network `10.~~.10.0/24` through Cisco `COREbaba`.
 
 The gateway must be reachable on the selected outgoing interface. A next hop outside `10.~~.~~.0/24` will not resolve without another route.
 
-The lab router uses `10.~~.~~.254/24` toward the FortiGate and `10.~~.10.4/24` toward the PC network. Give it a default route to `10.~~.~~.1` so the student PC has a return path through the FortiGate.
+Cisco `COREbaba` uses routed `Gi0/1` address `10.~~.~~.4/24` toward the FortiGate and VLAN 10 SVI `10.~~.10.4/24` toward the PC. Enable `ip routing` and give it default route `0.0.0.0/0` through `10.~~.~~.1` so the student PC has a return path through the FortiGate.
 
 ### Step 3 — Add the default route
 
@@ -100,7 +102,7 @@ Expected results:
 
 - `C` marks the connected LAN and WAN networks.
 - `S` marks the downstream and default static routes.
-- Details for `10.~~.10.10` show `10.~~.~~.254` on `internal1`.
+- Details for `10.~~.10.10` show `10.~~.~~.4` on `internal1`.
 - Details for `8.8.8.8` show `200.0.0.1` on `wan1`.
 
 Also test from the student PC at `10.~~.10.10/24`, gateway `10.~~.10.4`. A FortiGate ping is local-out traffic and does not validate a transit firewall policy.
@@ -119,4 +121,5 @@ Also test from the student PC at `10.~~.10.10/24`, gateway `10.~~.10.4`. A Forti
 ## Notes
 
 - Do not add NAT to private routed paths merely to hide a missing return route; add the return route when you control the other router.
+- Use this static route only when OSPF from `OSPF.md` is not providing the same prefix; avoid keeping unintended competing routes.
 - Use `Policy-Based-Routing.md` only when source, service, or another policy criterion must override ordinary destination routing.

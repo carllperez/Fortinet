@@ -1,152 +1,287 @@
-# FortiGate 60F — VLANs with a Cisco Managed Switch
+# FortiGate 60F — Cisco Collapsed-Backbone Switching
 
 | | |
 |---|---|
-| Device | FortiGate 60F and managed Cisco IOS switch |
-| Firmware | FortiOS 7.0.x |
-| Purpose | Build tagged VLAN gateways, DHCP scopes, and controlled inter-VLAN access |
+| Devices | FortiGate 60F, Cisco `COREbaba`, and Cisco `COREtaas` |
+| Firmware | FortiOS 7.0.x and Cisco IOS |
+| Purpose | Build the Day 1 routed-core VLAN, trunk, EtherChannel, and access-port topology |
 | License | No paid FortiGuard subscription required |
-| Est. time | 35–50 minutes |
+| Est. time | 45–60 minutes |
 
 ## Overview
 
-A VLAN separates one physical Ethernet link into multiple Layer-2 broadcast domains. The Cisco uplink carries tagged frames; each FortiGate VLAN interface removes the matching 802.1Q tag, acts as that VLAN's gateway, and applies firewall policy between networks.
+This guide follows `DAY1-May5-SirRob.txt`. The Cisco `COREbaba` Layer-3 switch owns the VLAN gateways and routes between VLANs. The FortiGate connects to `COREbaba` through a routed Ethernet link; it does not own VLAN 10 and it is not the switch-to-switch 802.1Q trunk endpoint.
 
-> Replace `~~` with the student's monitor number throughout. Example: monitor 61 gives PC `10.61.10.10`, PC VLAN `10.61.10.0/24`, and guest VLAN `10.61.20.0/24`.
+> **Day 1 Cisco foundation lab:** This guide configures `COREtaas-~~` and `COREbaba-~~`. Complete and verify it before starting any guide marked **Day 1 Cisco prerequisite**.
 
-## Network overview
+> Replace `~~` with the student's monitor number everywhere. For monitor 61, the student PC is `10.61.10.10/24` and its gateway is `10.61.10.4`.
 
-| VLAN | Name | FortiGate gateway | DHCP pool | Example switch port |
-|---:|---|---|---|---|
-| 1 | Transit/native | `10.~~.~~.1/24` on `internal1` | Existing lab scope | Uplink native VLAN |
-| 10 | PCs | `10.~~.10.4/24` | `10.~~.10.100–199` | `Gi0/2` access VLAN 10 |
-| 20 | Guest | `10.~~.20.1/24` | `10.~~.20.100–199` | `Gi0/3` access VLAN 20 |
+## Address and VLAN plan
 
-The standard student PC address is `10.~~.10.10/24` with gateway `10.~~.10.4`. Configure it statically or create a DHCP reservation for the PC's MAC address.
+| VLAN | Purpose | `COREtaas` SVI | `COREbaba` gateway |
+|---:|---|---|---|
+| 1 | Management/data | `10.~~.1.2/24` | `10.~~.1.4/24` |
+| 10 | Student PC / wireless | `10.~~.10.2/24` | `10.~~.10.4/24` |
+| 50 | IP cameras | `10.~~.50.2/24` | `10.~~.50.4/24` |
+| 100 | Voice | `10.~~.100.2/24` | `10.~~.100.4/24` |
+
+| Routed link | Address |
+|---|---|
+| FortiGate `internal1` | `10.~~.~~.1/24` |
+| `COREbaba` `Gi0/1` | `10.~~.~~.4/24` |
+| Student PC | `10.~~.10.10/24`, gateway `10.~~.10.4` |
 
 ```text
-wan1 [ FortiGate 60F ] internal1 ===== 802.1Q trunk ===== Gi0/1 [ Cisco switch ]
-                         VLAN 10 gateway                         Gi0/2 PC
-                         VLAN 20 gateway                         Gi0/3 Guest
+wan1 [ FortiGate ] internal1 10.~~.~~.1
+                         |
+                  routed Ethernet
+                         |
+                Gi0/1 10.~~.~~.4
+                    [ COREbaba ]
+             SVI VLAN 10 10.~~.10.4 ---- student PC 10.~~.10.10
+                         |
+             Po1: Fa0/10-12, 802.1Q/LACP
+                         |
+                    [ COREtaas ]
 ```
 
-> The existing repository uses `.4` for the PC-network gateway. In this lab the FortiGate owns `10.~~.10.4`, so do not configure a switch SVI with the same IP.
+> Address ownership is critical: configure `10.~~.10.4` only on `COREbaba` VLAN 10. Do not also create a FortiGate VLAN interface with that address.
 
 ## Prerequisites
 
-- `internal1` is available as the parent interface and physically connected to the switch
-- Cisco switch supports 802.1Q trunks
-- Management access will not be lost when the trunk changes
-- Existing subnets do not overlap VLAN 10 or 20
+- `internal1` is removed from any FortiGate hardware/software switch that prevents it from being used as the routed link.
+- Both Cisco switches support Layer-3 SVIs, 802.1Q trunks, and LACP EtherChannel.
+- Port names are adjusted if the physical switches do not use `Fa0/x` and `Gi0/1`.
+- Console access is available before changing management or uplink ports.
 
 ## Configuration
 
-### Step 1 — Create the VLAN interfaces
+### Step 1 — Configure the FortiGate routed link
 
-1. Go to **Network > Interfaces**.
-2. Click **Create New > Interface**.
-3. Create `PC-VLAN10` with Type **VLAN**, Interface `internal1`, VLAN ID `10`, and address `10.~~.10.4/255.255.255.0`.
-4. Enable Ping for testing. Do not enable WAN-side administrative services.
-5. Create `GUEST-VLAN20` on the same parent with VLAN ID `20` and address `10.~~.20.1/255.255.255.0`.
+Under **Network > Interfaces**, configure `internal1` as `10.~~.~~.1/255.255.255.0` and enable Ping for the lab.
 
-> **Screenshot:** Network > Interfaces showing both VLAN interfaces nested under `internal1`.
+Do not create `PC-VLAN10` on the FortiGate for this design. Traffic from all Cisco VLANs arrives untagged on the routed `internal1` link after `COREbaba` performs inter-VLAN routing.
 
-> Gotcha: a VLAN ID is a tag, not an IP subnet. VLAN 10 works only when both ends use tag 10; its IP range can be any non-overlapping subnet.
-
-### Step 2 — Enable DHCP per VLAN
-
-Edit each VLAN interface, enable DHCP Server, and set:
-
-| Interface | Range | Gateway | DNS |
-|---|---|---|---|
-| `PC-VLAN10` | `10.~~.10.100–10.~~.10.199` | Same as interface IP | Same as system DNS |
-| `GUEST-VLAN20` | `10.~~.20.100–10.~~.20.199` | Same as interface IP | Same as system DNS |
-
-Use mask `255.255.255.0`. Exclude gateways, switches, servers, and reservations from dynamic ranges.
-
-### Step 3 — Configure the Cisco trunk and access ports
-
-On a typical Cisco IOS switch:
+### Step 2 — Configure `COREtaas`
 
 ```text
 configure terminal
+hostname COREtaas-~~
 vlan 10
- name PCS
-vlan 20
- name GUEST
-interface GigabitEthernet0/1
- description TRUNK-TO-FORTIGATE-internal1
- switchport mode trunk
- switchport trunk native vlan 1
- switchport trunk allowed vlan 1,10,20
+ name WIFIVLAN
+vlan 50
+ name IPCameraVLAN
+vlan 100
+ name VOICEVLAN
+interface Vlan1
+ description MGMTDATA
+ ip address 10.~~.1.2 255.255.255.0
  no shutdown
-interface GigabitEthernet0/2
- description PC-VLAN10
+interface Vlan10
+ description WIRELESS
+ ip address 10.~~.10.2 255.255.255.0
+ no shutdown
+interface Vlan50
+ description IPCCTV
+ ip address 10.~~.50.2 255.255.255.0
+ no shutdown
+interface Vlan100
+ description VOICEVLAN
+ ip address 10.~~.100.2 255.255.255.0
+ no shutdown
+end
+```
+
+The `.2` addresses identify the upper switch. They are not the client default gateways; client gateways are the `.4` SVIs on `COREbaba`.
+
+### Step 3 — Configure `COREbaba` routing and SVIs
+
+```text
+configure terminal
+hostname COREbaba-~~
+ip routing
+vlan 10
+ name WIFIVLAN
+vlan 50
+ name IPCameraVLAN
+vlan 69
+ name vlanNIrobert
+vlan 70
+ name EXTRAVLAN
+vlan 71
+ name HRD-POLICY
+vlan 100
+ name VOICEVLAN
+interface GigabitEthernet0/1
+ description ROUTED-TO-FORTIGATE-internal1
+ no switchport
+ ip address 10.~~.~~.4 255.255.255.0
+ no shutdown
+interface Vlan1
+ description MGMTDATA
+ ip address 10.~~.1.4 255.255.255.0
+ no shutdown
+interface Vlan10
+ description STUDENT-PC-WIRELESS
+ ip address 10.~~.10.4 255.255.255.0
+ no shutdown
+interface Vlan50
+ description IPCCTV
+ ip address 10.~~.50.4 255.255.255.0
+ no shutdown
+interface Vlan100
+ description VOICEVLAN
+ ip address 10.~~.100.4 255.255.255.0
+ no shutdown
+ip route 0.0.0.0 0.0.0.0 10.~~.~~.1
+end
+```
+
+The default route sends unknown traffic, including internet traffic, to the FortiGate. `OSPF.md` replaces or supplements the static routing needed when dynamic routing is enabled.
+
+### Step 4 — Build the inter-switch LACP trunk
+
+Run the same configuration on `COREtaas` and `COREbaba`:
+
+```text
+configure terminal
+interface range FastEthernet0/10-12
+ channel-protocol lacp
+ channel-group 1 mode active
+ no shutdown
+interface Port-channel1
+ description LACP-TRUNK-COREtaas-COREbaba
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 1,10,50,69,70,71,100
+ no shutdown
+end
+```
+
+Some Cisco models use only 802.1Q and reject `switchport trunk encapsulation dot1q`; omit that single command on those models. All member links must use matching speed, duplex, trunk, and allowed-VLAN settings.
+
+### Step 5 — Place access ports in the required VLANs
+
+On `COREbaba`:
+
+```text
+configure terminal
+interface FastEthernet0/2
+ description STUDENT-PC-OR-WIFI
  switchport mode access
  switchport access vlan 10
  spanning-tree portfast
-interface GigabitEthernet0/3
- description GUEST-VLAN20
+interface FastEthernet0/4
+ description STUDENT-PC-OR-WIFI
  switchport mode access
- switchport access vlan 20
+ switchport access vlan 10
+ spanning-tree portfast
+interface FastEthernet0/6
+ description IP-CAMERA
+ switchport mode access
+ switchport access vlan 50
+ spanning-tree portfast
+interface FastEthernet0/8
+ description IP-CAMERA
+ switchport mode access
+ switchport access vlan 50
+ spanning-tree portfast
+interface FastEthernet0/3
+ description VOICE-DEVICE
+ switchport mode access
+ switchport access vlan 100
+ spanning-tree portfast
+interface FastEthernet0/5
+ description CISCO-PHONE-AND-PC
+ switchport mode access
+ switchport access vlan 1
+ switchport voice vlan 100
+ mls qos trust device cisco-phone
+ spanning-tree portfast
+interface FastEthernet0/7
+ description CISCO-PHONE-AND-PC
+ switchport mode access
+ switchport access vlan 1
+ switchport voice vlan 100
+ mls qos trust device cisco-phone
  spanning-tree portfast
 end
 ```
 
-Command availability varies by Cisco platform. Verify with:
+Connect the standard student PC to an access port in VLAN 10 and assign `10.~~.10.10/24`, gateway `10.~~.10.4`.
 
-```text
-show interfaces trunk
-show vlan brief
-```
+### Step 6 — Give the FortiGate routes to the VLANs
 
-The native VLAN must agree on both ends. FortiGate traffic on the untagged parent `internal1` corresponds to the Cisco native VLAN; FortiGate VLAN subinterfaces expect tagged frames.
+The preferred Day 1 method is OSPF; follow `OSPF.md`. For a temporary static-routing test, add a FortiGate route:
 
-### Step 4 — Create address objects and policies
+| Field | Value |
+|---|---|
+| Destination | `10.~~.0.0/16` |
+| Interface | `internal1` |
+| Gateway | `10.~~.~~.4` |
 
-Create subnet address objects under **Policy & Objects > Addresses** for both VLANs. Then create policies under **Policy & Objects > Firewall Policy**:
+The directly connected `10.~~.~~.0/24` route remains more specific than the summary route.
 
-| Name | Incoming | Outgoing | Source | Destination | Service | NAT |
-|---|---|---|---|---|---|---|
-| `PC-to-WAN` | `PC-VLAN10` | `wan1` | `PC-NET` | `all` | `ALL` initially | On |
-| `Guest-to-WAN` | `GUEST-VLAN20` | `wan1` | `GUEST-NET` | `all` | `DNS`, `HTTP`, `HTTPS` | On |
-| `PC-to-Guest-test` | `PC-VLAN10` | `GUEST-VLAN20` | `PC-NET` | test-host object | `PING` | Off |
+### Step 7 — Create the FortiGate internet policy
 
-Do not create a Guest-to-PC policy. FortiGate is stateful, so replies to sessions initiated by PCs are allowed, but new guest-initiated sessions have no matching policy.
+Because the Cisco core routes the PC VLAN, the FortiGate policy uses `internal1`, not `PC-VLAN10`:
 
-> **Screenshot:** Firewall Policy list showing internet policies and the one narrow inter-VLAN test policy.
+| Name | Incoming | Outgoing | Source | Destination | NAT |
+|---|---|---|---|---|---|
+| `Cisco-LANs-to-WAN` | `internal1` | `wan1` | `10.~~.0.0/16` | `all` | On |
+
+Start with only the required source subnets if the lab needs tighter access. Inter-VLAN traffic is routed inside `COREbaba` and does not cross the FortiGate, so FortiGate policies cannot filter it in this topology.
 
 ## Verification
 
-1. Connect the student PC to `Gi0/2`; it should use `10.~~.10.10/24` with gateway `10.~~.10.4` through a static setting or DHCP reservation.
-2. Connect another client to `Gi0/3`; it should receive `10.~~.20.x` with gateway `10.~~.20.1`.
-3. Confirm both can reach permitted internet services.
-4. Confirm the VLAN 10 PC reaches only the guest host/service explicitly allowed.
-5. Confirm a guest client cannot initiate a connection to the PC VLAN.
+On both switches:
 
-```shell
-show system interface PC-VLAN10
-show system interface GUEST-VLAN20
-execute ping 10.~~.10.10
-diagnose sniffer packet internal1 'vlan 10 or vlan 20' 4 20 l
+```text
+show ip interface brief
+show vlan brief
+show interfaces trunk
+show etherchannel summary
+show interfaces port-channel 1
 ```
 
-The capture should show tagged traffic on the parent link. Policy counters should increase for the expected interface pair.
+On `COREbaba`:
+
+```text
+show ip route
+ping 10.~~.~~.1 source 10.~~.~~.4
+ping 10.~~.10.10 source 10.~~.10.4
+```
+
+On the FortiGate:
+
+```shell
+get router info routing-table details 10.~~.10.10
+execute ping-options source 10.~~.~~.1
+execute ping 10.~~.~~.4
+diagnose sniffer packet internal1 'host 10.~~.10.10' 4 20 l
+```
+
+Expected results:
+
+- `Port-channel1` is up and its member ports show bundled state.
+- VLAN 10 is active and the PC uses gateway `10.~~.10.4`.
+- The FortiGate route to `10.~~.10.0/24` points to `10.~~.~~.4` or is learned through OSPF.
+- PC-to-WAN traffic enters the FortiGate on `internal1` and matches the NAT policy.
 
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Client receives `169.254.x.x` | Access VLAN missing, trunk does not allow the VLAN, or DHCP is disabled | Check Cisco access VLAN, allowed VLAN list, FortiGate VLAN ID, and DHCP scope |
-| Untagged management works but VLAN clients do not | Cisco link is access mode or VLAN tags are pruned | Make `Gi0/1` a trunk and allow VLANs 10 and 20 |
-| Only one VLAN fails | Tag mismatch between FortiGate and Cisco | Compare FortiGate VLAN ID with `show interfaces trunk` |
-| DHCP works but internet does not | Missing VLAN-to-WAN policy, route, or NAT | Check policy incoming interface, default route, and NAT enabled |
-| Inter-VLAN ping fails although policy matches | Target host firewall blocks other subnets | Test the gateway first, then allow ICMP on the target host |
-| Duplicate-IP warnings or unstable ARP | FortiGate and switch SVI use the same gateway address | Keep the gateway on only one routing device |
-| Native VLAN behaves unpredictably | Native VLAN mismatch | Use the same native VLAN on both ends or avoid carrying untagged user traffic |
+| PC receives `169.254.x.x` | Access VLAN or DHCP on `COREbaba` is wrong | Check the access port, VLAN 10 SVI, and `DHCP.md` |
+| SVI is down/down | No active Layer-2 port exists in that VLAN | Enable an access/trunk member carrying the VLAN |
+| Port-channel is suspended or amber | Member settings, LACP mode, or cabling do not match | Compare both ends and verify `show etherchannel summary` |
+| PC reaches `.4` but not the FortiGate | Routed `Gi0/1`, `ip routing`, or default route is missing | Verify `Gi0/1`, `show ip route`, and ping `10.~~.~~.1` |
+| FortiGate reaches `COREbaba` but not the PC | FortiGate lacks a VLAN route or the PC firewall blocks traffic | Add OSPF/static route, verify PC gateway, and allow the test traffic |
+| Internet policy has zero hits | Policy incorrectly expects `PC-VLAN10` | Use incoming interface `internal1` for the routed-core design |
+| Duplicate-IP or unstable ARP | `.4` is configured on both FortiGate and switch | Keep every VLAN `.4` gateway only on `COREbaba` |
 
 ## Notes
 
-- Routing between directly connected VLAN interfaces still requires a firewall policy.
-- NAT should be on for private-to-internet policies and off between normally routed VLANs.
-- Complete this guide before `DHCP.md` if you want to build multiple scopes.
+- Use `write memory` or `copy running-config startup-config` after verification.
+- The Day 1 source names VLAN 10 `WIRELESS`; this repository also places the standard student PC in that VLAN.
+- Use `FortiLink.md` only for FortiSwitch management. FortiLink is a different design from this Cisco collapsed backbone.

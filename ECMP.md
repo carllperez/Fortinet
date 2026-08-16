@@ -12,13 +12,15 @@
 
 ECMP installs more than one equally preferred next hop for the same destination. FortiGate distributes sessions—not individual packets in this basic lab—across the eligible paths. A single session normally stays on one path so packet ordering is preserved.
 
+> **Day 1 Cisco prerequisite:** When testing from the standard student PC, configure and verify `COREtaas-~~` and `COREbaba-~~` with [VLAN.md](VLAN.md) first. Confirm VLAN 10 routing and FortiGate return routes before evaluating ECMP behavior.
+
 > Replace `~~` with the student's monitor number. Example: monitor 61 gives student PC `10.61.10.10`.
 
 ## Topology
 
 ```text
                        next hop 200.0.0.1 ── Router A ── 203.0.113.0/24
-student PC 10.~~.10.10 ── LAN ── [ FortiGate ]
+student PC 10.~~.10.10 ── COREbaba ── internal1 [ FortiGate ]
                        next hop 201.0.0.1 ── Router B ── 203.0.113.0/24
 ```
 
@@ -32,7 +34,7 @@ student PC 10.~~.10.10 ── LAN ── [ FortiGate ]
 - Both next hops are reachable on their directly connected interfaces
 - Both routers have a return route to student PC network `10.~~.10.0/24`
 - The destination is reachable behind both routers
-- Firewall policies allow LAN to both WAN interfaces; NAT is off for this routed private lab
+- Firewall policies allow `internal1` to both WAN interfaces; NAT is off for this routed private lab
 
 ## Configuration
 
@@ -51,7 +53,7 @@ The destination, distance, and priority must be equal for this predictable stati
 
 ### Step 2 — Create firewall policies
 
-Create one LAN-to-`wan1` policy and one LAN-to-`wan2` policy with the same source, destination, schedule, and services. Leave NAT off because Router A and Router B have return routes. If this were internet access using private LAN addresses, NAT would be enabled on both policies.
+Create one `internal1`-to-`wan1` policy and one `internal1`-to-`wan2` policy with the same source, destination, schedule, and services. Leave NAT off because Router A and Router B have return routes. If this were internet access using private LAN addresses, NAT would be enabled on both policies.
 
 ### Step 3 — Generate several independent sessions
 

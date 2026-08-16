@@ -1,112 +1,150 @@
-# FortiGate 60F — DHCP Server, Reservations, and Relay
+# DHCP for the Cisco Core and FortiGate Alternatives
 
 | | |
 |---|---|
-| Device | FortiGate 60F |
-| Firmware | FortiOS 7.0.x |
-| Purpose | Assign correct client settings on LANs and relay requests to an external server |
-| License | No paid FortiGuard subscription required |
+| Devices | Cisco `COREbaba` and FortiGate 60F |
+| Purpose | Assign correct client settings without creating competing DHCP servers |
+| License | No paid subscription required |
 | Est. time | 25–40 minutes |
 
 ## Overview
 
-FortiGate can run a separate DHCP server on each routed interface or relay broadcasts to an external DHCP server. A scope must match the interface subnet and provide a usable gateway, DNS server, lease time, and non-overlapping address range.
+Choose the DHCP design that matches the gateway owner:
 
-> Complete `VLAN.md` first if you want one scope per VLAN.
->
-> Replace `~~` with the student's monitor number. Example: monitor 61 gives student PC `10.61.10.10`.
+- In the Day 1 Cisco collapsed-backbone design from `VLAN.md`, `COREbaba` owns the `.4` SVIs and should provide DHCP locally, as shown in the supplied switching notes.
+- In a standalone FortiGate VLAN lab, the FortiGate may provide DHCP only when it owns the client-facing VLAN interface and gateway.
 
-## Network overview
+> **Day 1 Cisco prerequisite:** For the supplied `DAY1-May5-SirRob.txt` topology, configure and verify both `COREtaas-~~` and `COREbaba-~~` with [VLAN.md](VLAN.md) before starting this lab.
 
-| Scope | Interface | Gateway | Dynamic range |
-|---|---|---|---|
-| LAN | `internal1` | `10.~~.~~.1` | `10.~~.~~.100–200` |
-| PCs | `PC-VLAN10` | `10.~~.10.4` | `10.~~.10.100–199` |
-| Guest | `GUEST-VLAN20` | `10.~~.20.1` | `10.~~.20.100–199` |
+Never enable both DHCP servers on the same VLAN. Do not configure FortiGate DHCP on `10.~~.10.0/24` while `COREbaba` owns `10.~~.10.4` unless a deliberately tested relay design is in place.
+
+> Replace `~~` with the student's monitor number. The standard PC remains `10.~~.10.10/24`, gateway `10.~~.10.4`.
+
+## Day 1 Cisco scope plan
+
+| VLAN | Network | Gateway | DNS | Dynamic addresses after exclusions |
+|---:|---|---|---|---|
+| 1 | `10.~~.1.0/24` | `10.~~.1.4` | `10.~~.1.10` | `10.~~.1.101–199` |
+| 10 | `10.~~.10.0/24` | `10.~~.10.4` | `10.~~.1.10` | `10.~~.10.101–199` |
+| 50 | `10.~~.50.0/24` | `10.~~.50.4` | `10.~~.1.10` | `10.~~.50.101–199` |
+| 100 | `10.~~.100.0/24` | `10.~~.100.4` | `10.~~.1.10` | `10.~~.100.101–199` |
+
+The source notes exclude `.1–.100`. This guide also excludes `.200–.254` to keep the documented dynamic range bounded at `.101–.199`. The PC address `.10`, switch addresses, server addresses, phones, and cameras remain outside the dynamic pool.
 
 ## Configuration
 
-### Step 1 — Configure a DHCP server
+### Step 1 — Configure DHCP on `COREbaba`
 
-1. Go to **Network > Interfaces**.
-2. Edit `internal1` and enable DHCP Server.
-3. Set the range to `10.~~.~~.100–10.~~.~~.200`.
-4. Set mask `255.255.255.0`.
-5. Set Default Gateway to Same as Interface IP.
-6. Use Same as System DNS or specify reachable DNS servers.
-7. Set a lab lease time such as one day.
-8. Save.
-
-> **Screenshot:** internal1 DHCP server showing range, gateway, DNS, and lease time.
-
-Keep infrastructure addresses outside the dynamic pool. Do not create overlapping ranges on the same broadcast domain.
-
-### Step 2 — Reserve an address by MAC
-
-Go to **Dashboard > Network**, expand the DHCP widget, locate a current lease, and choose **Create DHCP Reservation**. Alternatively, edit the DHCP server's reserved-address list and enter:
-
-| Field | Example |
-|---|---|
-| Description | `Lab-Printer` |
-| MAC address | Device's actual MAC |
-| Reserved IP | `10.~~.10.10` for the standard student PC |
-
-Renew the client lease. The student PC should receive `10.~~.10.10/24` with gateway `10.~~.10.4`. The reservation must be in the interface subnet and must not collide with another static device. Keeping reservations outside the dynamic range makes conflicts easier to prevent.
-
-### Step 3 — Add scopes to VLANs
-
-Edit `PC-VLAN10` and `GUEST-VLAN20` under **Network > Interfaces** and enable their separate DHCP servers using the table above. DHCP broadcasts do not cross VLANs, so each VLAN needs its own server or relay.
-
-### Step 4 — Configure DHCP relay instead of a local server
-
-Use relay on an interface only when an external server, such as `10.~~.~~.20`, owns the scope.
-
-1. Edit the client-facing interface under **Network > Interfaces**.
-2. Expand Advanced DHCP settings and set Mode to **Relay**.
-3. Enter DHCP Server IP `10.~~.~~.20`.
-4. Save.
-
-CLI equivalent for a VLAN example:
-
-```shell
-config system interface
-    edit "GUEST-VLAN20"
-        set dhcp-relay-service enable
-        set dhcp-relay-ip "10.~~.~~.20"
-    next
+```text
+configure terminal
+ip dhcp excluded-address 10.~~.1.1 10.~~.1.100
+ip dhcp excluded-address 10.~~.1.200 10.~~.1.254
+ip dhcp excluded-address 10.~~.10.1 10.~~.10.100
+ip dhcp excluded-address 10.~~.10.200 10.~~.10.254
+ip dhcp excluded-address 10.~~.50.1 10.~~.50.100
+ip dhcp excluded-address 10.~~.50.200 10.~~.50.254
+ip dhcp excluded-address 10.~~.100.1 10.~~.100.100
+ip dhcp excluded-address 10.~~.100.200 10.~~.100.254
+ip dhcp pool MGMTDATA
+ network 10.~~.1.0 255.255.255.0
+ default-router 10.~~.1.4
+ domain-name MGMTDATA.COM
+ dns-server 10.~~.1.10
+ip dhcp pool WIFIDATA
+ network 10.~~.10.0 255.255.255.0
+ default-router 10.~~.10.4
+ domain-name WIFIDATA.COM
+ dns-server 10.~~.1.10
+ip dhcp pool IPCCTV
+ network 10.~~.50.0 255.255.255.0
+ default-router 10.~~.50.4
+ domain-name IPCCTV.COM
+ dns-server 10.~~.1.10
+ip dhcp pool VOICEVLAN
+ network 10.~~.100.0 255.255.255.0
+ default-router 10.~~.100.4
+ domain-name VOICEVLAN.COM
+ dns-server 10.~~.1.10
+ option 150 ip 10.~~.100.8
 end
 ```
 
-Disable/remove the local DHCP server on that interface before using the relay-only lab. The external server needs a scope for `10.~~.20.0/24`, gateway `10.~~.20.1`, and a route back to that subnet through the FortiGate. The relay inserts gateway information so the server can select the correct scope.
+Option 150 tells supported Cisco phones where to find the call manager/TFTP service.
+
+### Step 2 — Keep the student PC at the standard address
+
+Use one of these approaches:
+
+1. Configure the PC statically as `10.~~.10.10/24`, gateway `10.~~.10.4`, DNS `10.~~.1.10`.
+2. Create a Cisco manual binding using the PC's actual DHCP client identifier or hardware address.
+
+The static method is simplest for the lab because `.10` is already excluded from dynamic allocation. Do not invent a client identifier; obtain it from the real client or an existing DHCP binding.
+
+### Step 3 — Add the camera reservations from the source notes
+
+Replace each sample identifier with the real camera identifier:
+
+```text
+configure terminal
+ip dhcp pool CAMERA6
+ host 10.~~.50.6 255.255.255.0
+ client-identifier <camera-6-client-id>
+ip dhcp pool CAMERA8
+ host 10.~~.50.8 255.255.255.0
+ client-identifier <camera-8-client-id>
+end
+```
+
+### Step 4 — Optional external-server relay
+
+If an external DHCP server at `10.~~.1.10` owns the scopes instead of `COREbaba`, remove the overlapping Cisco local pools and relay client VLANs to that server:
+
+```text
+configure terminal
+interface Vlan10
+ ip helper-address 10.~~.1.10
+interface Vlan50
+ ip helper-address 10.~~.1.10
+interface Vlan100
+ ip helper-address 10.~~.1.10
+end
+```
+
+The external server needs one matching scope per VLAN, and routing/firewalls must allow the return path.
+
+## Standalone FortiGate alternative
+
+Use this only in a different topology where the FortiGate owns the client-facing interface. For example, if `PC-VLAN10` exists on the FortiGate at `10.~~.10.4/24`, edit that interface under **Network > Interfaces**, enable DHCP, and use a non-overlapping range such as `10.~~.10.101–199`.
+
+This alternative is not used with the Cisco `COREbaba` gateway design. A FortiGate DHCP server is tied to its interface/subnet; it should not be presented as the local server for a VLAN whose SVI belongs to another router.
 
 ## Verification
 
-On a client, release and renew the lease. Verify address, mask, gateway, DNS, and lease duration—not just the IP address.
+On `COREbaba`:
 
-On FortiGate:
-
-```shell
-execute dhcp lease-list
-show system dhcp server
-diagnose sniffer packet any 'udp port 67 or 68' 4 30 l
+```text
+show ip dhcp pool
+show ip dhcp binding
+show ip dhcp conflict
+show ip interface brief
 ```
 
-A normal exchange shows Discover, Offer, Request, and Acknowledgment. For relay, the capture should also show unicast relay traffic between the FortiGate and external server.
+On a client, release and renew the lease, then verify all values: address, `/24` mask, gateway `10.~~.10.4`, DNS `10.~~.1.10`, and lease duration.
 
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Client gets `169.254.x.x` (APIPA) | No DHCP offer reaches it | Check link, access VLAN, trunk tags, scope status, and capture UDP 67/68 |
-| Client gets an address but wrong gateway | Scope option points to another router | Set gateway to the client-facing FortiGate interface |
-| Client receives an address from another subnet | Wrong access VLAN, native VLAN leak, or rogue DHCP server | Inspect switch port VLAN and capture the offer's source |
-| Some clients work and new clients fail | DHCP range is exhausted | Review leases, enlarge the valid pool, or shorten an excessive lease time |
-| Reserved client gets a different address | MAC differs because of Wi-Fi private/randomized MAC or stale lease | Reserve the MAC actually presented and renew the lease |
-| Relay sends requests but no offer returns | External scope, server route, server firewall, or relay authorization is missing | Create the matching scope and route `10.~~.20.0/24` through the FortiGate |
-| Offer returns to FortiGate but not client | VLAN/interface selection is wrong | Verify the client-facing relay interface and switch tagging |
+| Client gets `169.254.x.x` | No offer reaches the VLAN | Check the access port, SVI state, pool network, exclusions, and bindings |
+| Client gets the wrong gateway | Scope points to the wrong routing device | Use the matching `COREbaba` `.4` SVI |
+| Client receives an address from another subnet | Wrong access VLAN or rogue DHCP server | Verify the port VLAN and identify the offer source |
+| PC cannot receive `.10` dynamically | `.10` is excluded but no manual binding exists | Keep it static or create a binding with the real identifier |
+| New clients fail after the pool fills | Range exhausted | Inspect bindings and adjust the documented exclusions deliberately |
+| Relay sends requests but no offer returns | Missing external scope, route, or authorization | Verify the server's scope and both-way routing |
+| Duplicate offers appear | Cisco and FortiGate DHCP are both active | Disable the server that does not own this topology |
 
 ## Notes
 
-- DHCP server and DHCP relay are infrastructure features and do not require FortiGuard licensing.
-- A FortiGate firewall policy is not a substitute for correct relay routing and external-server scope configuration.
-- For critical devices, document reservations and exclude their addresses from general allocation.
+- Save the Cisco configuration after successful testing.
+- DHCP does not require FortiGuard licensing.
+- Document every static assignment and reservation to prevent conflicts.

@@ -1,154 +1,142 @@
-# FortiGate 60F — Standalone OSPF Lab with a Cisco Router
+# FortiGate 60F — OSPF with Cisco `COREbaba`
 
 | | |
 |---|---|
-| Devices | FortiGate 60F and Cisco router or Layer-3 switch |
-| Firmware | FortiOS 7.0.x |
-| Purpose | Form an Area 0 neighbor and exchange LAN routes |
+| Devices | FortiGate 60F and Cisco `COREbaba` Layer-3 switch |
+| Firmware | FortiOS 7.0.x and Cisco IOS |
+| Purpose | Form the Day 1 Area 0 adjacency and advertise the Cisco VLANs to the FortiGate |
 | License | No paid FortiGuard subscription required |
-| Est. time | 30–45 minutes |
+| Est. time | 25–40 minutes |
 
 ## Overview
 
-This lab teaches OSPF on a plain routed Ethernet link. It does not use IPsec. After this adjacency works, `Site-to-Site-VPN.md` applies the same neighbor and route concepts to a tunnel interface.
+This lab follows the OSPF portion of `DAY1-May5-SirRob.txt`. `COREbaba` routes the local VLANs and advertises them to the FortiGate across the routed `10.~~.~~.0/24` link. The FortiGate then knows how to reach the student PC and can carry those learned routes into the Site-to-Site VPN lab.
 
-> Replace `~~` with the student's monitor number throughout. Example: monitor 61 gives student PC `10.61.10.10`.
+> **Day 1 Cisco prerequisite:** Configure and verify both `COREtaas-~~` and `COREbaba-~~` with [VLAN.md](VLAN.md) first. The VLANs, LACP trunk, SVIs, and routed `COREbaba`-to-FortiGate link must be operational before OSPF is enabled.
+
+> Replace `~~` with the student's monitor number. For monitor 61, the PC is `10.61.10.10/24`, gateway `10.61.10.4`.
 
 ## Topology
 
 ```text
-FortiGate PC LAN                OSPF transit                 Cisco LAN
-10.~~.10.0/24                                                    10.~~.20.0/24
-PC 10.~~.10.10
-     |                                                               |
-[ FortiGate ] internal1 10.~~.255.1/30 ─── 10.~~.255.2/30 [ Cisco router ]
- router-id 10.~~.255.1                              router-id 10.~~.255.2
-                         Area 0.0.0.0
+student PC                    Area 0 adjacency                  FortiGate
+10.~~.10.10/24                                                  WAN/VPN
+gateway 10.~~.10.4                                                  |
+       |                                                            |
+[ COREbaba ] Gi0/1 10.~~.~~.4/24 ---- 10.~~.~~.1/24 internal1 [ FortiGate ]
+ router-id 10.~~.~~.4                         router-id ~~.0.0.1
 ```
 
-| Network | Owner | Advertised by |
-|---|---|---|
-| `10.~~.10.0/24` | FortiGate side | FortiGate |
-| `10.~~.255.0/30` | Transit | Both |
-| `10.~~.20.0/24` | Cisco side | Cisco |
+`COREbaba` advertises these connected Day 1 networks when present: VLAN 1 (`10.~~.1.0/24`), VLAN 10 (`10.~~.10.0/24`), VLAN 50 (`10.~~.50.0/24`), VLAN 100 (`10.~~.100.0/24`), and the routed link.
 
 ## Prerequisites
 
-- A dedicated routed FortiGate interface; remove it from a hardware switch if necessary
-- Cisco interface configured as a Layer-3 port or SVI
-- No duplicate IP addressing
-- Firewall policies for the later transit test, with NAT off
+- Complete the routed-core portion of `VLAN.md`.
+- FortiGate `internal1` is `10.~~.~~.1/24`.
+- `COREbaba` `Gi0/1` is a routed port at `10.~~.~~.4/24`, with `ip routing` enabled.
+- Each device can ping the other routed-link address before OSPF is enabled.
+- Router IDs are unique.
 
 ## Configuration
 
-### Step 1 — Address and test the transit link
+### Step 1 — Configure OSPF on `COREbaba`
 
-Configure `internal1` as `10.~~.255.1/255.255.255.252` and enable Ping under **Network > Interfaces**. Configure the Cisco side as `10.~~.255.2/30`, then confirm both routers can ping one another before enabling OSPF.
+```text
+configure terminal
+ip routing
+router ospf 1
+ router-id 10.~~.~~.4
+ passive-interface default
+ no passive-interface GigabitEthernet0/1
+ network 10.~~.0.0 0.0.255.255 area 0
+interface GigabitEthernet0/1
+ ip ospf network point-to-point
+end
+```
 
-### Step 2 — Configure FortiGate OSPF
+The broad Cisco wildcard includes the site's `10.~~.x.0/24` connected networks. `passive-interface default` advertises the SVI networks without sending OSPF Hellos to user devices; only `Gi0/1` forms a neighbor.
 
-If **Network > OSPF** is hidden, enable Advanced Routing under **System > Feature Visibility**. In **Network > OSPF**:
+### Step 2 — Configure OSPF on the FortiGate
 
-1. Set Router ID to `10.~~.255.1`.
-2. Create Area `0.0.0.0`.
-3. Add `10.~~.255.0/255.255.255.252` to Area `0.0.0.0`.
-4. Add `10.~~.10.0/255.255.255.0` to the same area.
-5. Create an OSPF interface bound to `internal1`, network type Broadcast, cost `10`.
-6. Make the user-LAN interface passive if it must be advertised but should never form neighbors.
-
-Equivalent FortiGate CLI:
+If **Network > OSPF** is hidden, enable Advanced Routing under **System > Feature Visibility**. Equivalent CLI:
 
 ```shell
 config router ospf
-    set router-id 10.~~.255.1
+    set router-id ~~.0.0.1
     config area
         edit 0.0.0.0
         next
     end
     config ospf-interface
-        edit "to-cisco"
+        edit "to-COREbaba"
             set interface "internal1"
-            set network-type broadcast
+            set network-type point-to-point
             set cost 10
         next
     end
     config network
         edit 1
-            set prefix 10.~~.255.0 255.255.255.252
-            set area 0.0.0.0
-        next
-        edit 2
-            set prefix 10.~~.10.0 255.255.255.0
+            set prefix 10.~~.~~.0 255.255.255.0
             set area 0.0.0.0
         next
     end
 end
 ```
 
-The network entry activates OSPF on matching interfaces and advertises the prefix. Use passive-interface controls for interfaces where advertisements are needed but Hellos are not.
+Both ends use point-to-point network type, matching the supplied Day 1 design. Do not add the Cisco VLANs as FortiGate OSPF networks: they are not FortiGate-connected interfaces; the FortiGate learns them from `COREbaba`.
 
-> **Screenshot:** Network > OSPF showing router ID, Area 0, and the two networks.
+### Step 3 — Decide how `COREbaba` reaches external networks
 
-### Step 3 — Configure Cisco OSPF
+For the basic lab, retain the Cisco static default route:
 
 ```text
-configure terminal
-router ospf 1
- router-id 10.~~.255.2
- passive-interface default
- no passive-interface <transit-interface>
- network 10.~~.255.0 0.0.0.3 area 0
- network 10.~~.20.0 0.0.0.255 area 0
-end
+ip route 0.0.0.0 0.0.0.0 10.~~.~~.1
 ```
 
-Replace `<transit-interface>` with the real Cisco interface. The Cisco wildcard masks are not FortiGate subnet masks.
+This sends internet and unknown destinations to the FortiGate. Advertising a default route through OSPF is an optional advanced design and is not required here.
 
-### Step 4 — Permit transit traffic
+### Step 4 — Create FortiGate transit policies
 
-Create policies for the actual interface pair under **Policy & Objects > Firewall Policy**. For a two-way ping test, allow both FortiGate-LAN-to-transit and transit-to-FortiGate-LAN directions. Keep NAT off. OSPF packets to the FortiGate control plane do not require a transit policy, but routed user traffic does.
+OSPF control packets terminate on the FortiGate and do not require a normal forward policy. User traffic does. For PC internet access, create an `internal1` to `wan1` policy with the Cisco VLAN source networks and NAT enabled. For private routed or VPN traffic, use the actual outgoing interface and keep NAT off unless that guide explicitly says otherwise.
 
 ## Verification
+
+On the FortiGate:
 
 ```shell
 get router info ospf neighbor
 get router info ospf interface
 get router info ospf database brief
 get router info routing-table ospf
-get router info routing-table details 10.~~.20.10
+get router info routing-table details 10.~~.10.10
 ```
 
-Expected result: the Cisco peer appears in `Full` state and `10.~~.20.0/24` appears as an OSPF route through `10.~~.255.2`.
+Expected: neighbor `10.~~.~~.4` is Full on `internal1`, and `10.~~.10.0/24` is learned through `10.~~.~~.4`.
 
-On Cisco:
+On `COREbaba`:
 
 ```text
 show ip ospf neighbor
+show ip ospf interface GigabitEthernet0/1
 show ip route ospf
-show ip ospf interface
+show ip route 0.0.0.0
 ```
 
-Finally, test from an endpoint on each LAN. Router-originated pings do not prove the firewall policies or endpoint gateways.
-
-The standard FortiGate-side student PC is `10.~~.10.10/24`; its gateway is normally `10.~~.10.4` when following `VLAN.md`.
-
-## Cost and passive interfaces
-
-OSPF selects the path with the lowest accumulated cost. Changing FortiGate interface cost from `10` to `100` makes this link less attractive only when another OSPF path exists. A passive interface advertises its connected network without attempting neighbor adjacency, reducing noise and avoiding accidental peers on user networks.
+Finally, test from the PC. Router-originated pings alone do not verify the PC gateway, FortiGate policy, or return path.
 
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| No neighbor appears | Transit IP connectivity is broken, OSPF not enabled on the link, or interface is passive | Ping both transit IPs and compare network statements/passive settings |
-| Neighbor remains `Init` | One-way Hello communication | Check VLANs, ACLs, multicast handling, and captures in both directions |
-| Neighbor cycles through `ExStart`/`Exchange` | MTU or duplicate router-ID problem | Match MTU and assign unique stable router IDs |
-| Neighbor stops at `2-Way` on broadcast Ethernet | It is a DROther relationship | This can be normal between DROthers; with only two routers they should normally reach Full |
-| Neighbor is Full but remote LAN route is absent | Remote LAN is not advertised or filtered | Check Cisco network statement and OSPF database |
-| Route exists but hosts cannot communicate | Missing firewall policy, endpoint gateway, or return path | Test hop by hop and keep NAT off |
-| Adjacency never forms after an authentication change | Authentication type/key mismatch | Configure identical OSPF authentication on both ends or remove it for the beginner lab |
+| No neighbor appears | Link IPs, network statement, interface state, or passive setting is wrong | Ping both link addresses and compare OSPF settings |
+| Neighbor remains `Init` | One-way Hello communication | Check cabling, ACLs, and packet captures in both directions |
+| Neighbor cycles through `ExStart`/`Exchange` | MTU or duplicate router ID | Match MTU and use unique router IDs |
+| Neighbor is Full but VLAN routes are absent | SVI is down or not matched by the Cisco network statement | Check `show ip interface brief`, connected routes, and OSPF database |
+| FortiGate route points somewhere other than `.4` | A static or competing dynamic route wins | Inspect administrative distance and remove the unintended route |
+| Route exists but PC traffic fails | Missing FortiGate policy, wrong PC gateway, or endpoint firewall | Verify gateway `10.~~.10.4`, policy counters, and host firewall |
+| Site-to-Site uses WAN instead of tunnel | Competing OSPF path has a lower cost | Follow the tunnel/WAN cost section in `Site-to-Site-VPN.md` |
 
-Useful capture:
+Useful FortiGate capture:
 
 ```shell
 diagnose sniffer packet internal1 'ip proto 89' 4 20 l
@@ -158,4 +146,4 @@ diagnose sniffer packet internal1 'ip proto 89' 4 20 l
 
 - OSPF uses IP protocol 89, not TCP or UDP port 89.
 - The router ID need not be an interface address, but it must be unique and stable.
-- Do not run OSPF on an untrusted WAN for this lab.
+- Keep user-facing SVIs passive; form the adjacency only on the routed FortiGate link.
