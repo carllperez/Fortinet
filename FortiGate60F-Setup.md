@@ -4,9 +4,9 @@
 |---|---|
 | Device | FortiGate 60F |
 | Firmware | FortiOS 7.0.15 |
-| Purpose | Build a clean FortiGate lab for firewall policies, web filtering, remote-access VPN, and ADVPN |
+| Purpose | Build a clean FortiGate |
 | Management | SecureCRT serial console and FortiGate web interface |
-| Est. time | 20–30 minutes |
+| Est. time | 10-20 minutes |
 
 ## Overview
 
