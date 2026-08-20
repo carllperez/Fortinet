@@ -41,7 +41,8 @@ Go to **Security Fabric > Automation**. FortiOS 7.0 commonly includes default st
 Do not hardcode a log ID copied from another firmware build. Selecting the event by description in the FortiOS 7.0 GUI keeps the trigger aligned with that device's log schema.
 
 <img width="1440" height="867" alt="1" src="https://github.com/user-attachments/assets/6a150ac1-8141-4941-bdfb-1a78384d9ee1" />
-
+<img width="1440" height="869" alt="4" src="https://github.com/user-attachments/assets/aa093be6-58f3-484b-9816-5b08f7cb0a96" />
+<img width="1440" height="870" alt="5" src="https://github.com/user-attachments/assets/49600397-a34e-47e8-bcdf-59c8b3140090" />
 
 
 
@@ -59,8 +60,6 @@ Name the action `Record-Lab-Status`, attach it to the stitch, and enable the sti
 
 <img width="1440" height="870" alt="2" src="https://github.com/user-attachments/assets/830fa740-570d-485b-a7ab-b89ea09c1026" />
 <img width="1440" height="866" alt="3" src="https://github.com/user-attachments/assets/61778b3f-0455-441a-bea4-c3a2b5467d6c" />
-<img width="1440" height="869" alt="4" src="https://github.com/user-attachments/assets/aa093be6-58f3-484b-9816-5b08f7cb0a96" />
-<img width="1440" height="870" alt="5" src="https://github.com/user-attachments/assets/49600397-a34e-47e8-bcdf-59c8b3140090" />
 
 
 Automation activation and action results are recorded in FortiGate event/automation history. There is no need to invent a separate generic "write log" action when the selected 7.0 GUI does not offer it.
