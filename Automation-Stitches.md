@@ -41,7 +41,6 @@ Go to **Security Fabric > Automation**. FortiOS 7.0 commonly includes default st
 Do not hardcode a log ID copied from another firmware build. Selecting the event by description in the FortiOS 7.0 GUI keeps the trigger aligned with that device's log schema.
 
 <img width="1440" height="900" alt="1" src="https://github.com/user-attachments/assets/d3e15cb1-cffb-48dd-b7ae-6b9bac09ed11" />
-<img width="1440" height="900" alt="2" src="https://github.com/user-attachments/assets/57a95699-9e40-4b2e-84cd-08d1d878977a" />
 
 
 ### Step 3 — Add a local action
@@ -56,6 +55,7 @@ get system status
 
 Name the action `Record-Lab-Status`, attach it to the stitch, and enable the stitch.
 
+<img width="1440" height="900" alt="2" src="https://github.com/user-attachments/assets/57a95699-9e40-4b2e-84cd-08d1d878977a" />
 <img width="1440" height="900" alt="3" src="https://github.com/user-attachments/assets/0ff938a0-b55f-4731-8d4d-2fe3b9f765b4" />
 <img width="1440" height="900" alt="4" src="https://github.com/user-attachments/assets/62aaef93-5d23-4d4e-900d-4bfc8fd9b1c5" />
 <img width="1440" height="900" alt="5" src="https://github.com/user-attachments/assets/9c55b978-4cd2-43cf-80e1-16e207e2602f" />
