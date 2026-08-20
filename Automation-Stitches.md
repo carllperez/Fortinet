@@ -30,8 +30,6 @@ This lab records and tests two safe local examples:
 
 Go to **Security Fabric > Automation**. FortiOS 7.0 commonly includes default stitches such as Network Down, Reboot, HA Failover, or License Expiry Notification. Review them before creating duplicates.
 
-<img width="1440" height="900" alt="1" src="https://github.com/user-attachments/assets/d3e15cb1-cffb-48dd-b7ae-6b9bac09ed11" />
-
 
 ### Step 2 — Create an interface-down trigger
 
@@ -42,6 +40,7 @@ Go to **Security Fabric > Automation**. FortiOS 7.0 commonly includes default st
 
 Do not hardcode a log ID copied from another firmware build. Selecting the event by description in the FortiOS 7.0 GUI keeps the trigger aligned with that device's log schema.
 
+<img width="1440" height="900" alt="1" src="https://github.com/user-attachments/assets/d3e15cb1-cffb-48dd-b7ae-6b9bac09ed11" />
 <img width="1440" height="900" alt="2" src="https://github.com/user-attachments/assets/57a95699-9e40-4b2e-84cd-08d1d878977a" />
 
 
