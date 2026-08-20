@@ -39,6 +39,9 @@ UDP is easy to demonstrate but does not confirm delivery. Use reliable/TLS loggi
 
 Configure the collector to listen on UDP 514 and store messages from `10.~~.~~.1` in a dedicated file or source. Confirm with a local test message before blaming the FortiGate.
 
+<img width="1440" height="867" alt="1" src="https://github.com/user-attachments/assets/e85ba67f-e2ac-48e8-8867-e8156edfa9c1" />
+
+
 ### Step 2 — Configure remote syslog
 
 Where exposed, go to **Log & Report > Log Settings**, enable Send Logs to Syslog, and enter the server, port, facility, and severity.
@@ -63,14 +66,17 @@ config log syslogd filter
     set local-traffic enable
 end
 ```
+<img width="1440" height="867" alt="2" src="https://github.com/user-attachments/assets/6744fd02-242d-4bc7-ae8c-80669bd49964" />
 
-> **Screenshot:** Log Settings showing the enabled remote syslog destination.
 
 If the selected FortiOS 7.0 patch does not expose interface selection in the GUI, use the CLI and confirm with `show log syslogd setting`.
 
 ### Step 3 — Enable policy logging
 
 Under **Policy & Objects > Firewall Policy**, edit the lab internet policy and set **Log Allowed Traffic** to **All Sessions**. A syslog filter cannot send a forward-traffic record that the policy never generated.
+
+<img width="1440" height="867" alt="3" src="https://github.com/user-attachments/assets/1d0ada53-3049-4c55-ba7e-22d44311894c" />
+
 
 ## Verification
 
