@@ -40,6 +40,8 @@ UDP is easy to demonstrate but does not confirm delivery. Use reliable/TLS loggi
 Configure the collector to listen on UDP 514 and store messages from `10.~~.~~.1` in a dedicated file or source. Confirm with a local test message before blaming the FortiGate.
 
 <img width="1440" height="867" alt="1" src="https://github.com/user-attachments/assets/e85ba67f-e2ac-48e8-8867-e8156edfa9c1" />
+<img width="1440" height="867" alt="2" src="https://github.com/user-attachments/assets/6744fd02-242d-4bc7-ae8c-80669bd49964" />
+
 
 
 ### Step 2 — Configure remote syslog
@@ -66,8 +68,6 @@ config log syslogd filter
     set local-traffic enable
 end
 ```
-<img width="1440" height="867" alt="2" src="https://github.com/user-attachments/assets/6744fd02-242d-4bc7-ae8c-80669bd49964" />
-
 
 If the selected FortiOS 7.0 patch does not expose interface selection in the GUI, use the CLI and confirm with `show log syslogd setting`.
 
