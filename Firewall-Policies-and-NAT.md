@@ -57,6 +57,12 @@ Under **Policy & Objects > Addresses**, create:
 
 Create an address group named `Trusted-Lab` and add `Lab-PC`. Under **Policy & Objects > Services**, inspect the built-in `DNS`, `HTTP`, and `HTTPS` objects. Create a custom service only when the required protocol/port does not already exist.
 
+
+<img width="1440" height="900" alt="1" src="https://github.com/user-attachments/assets/8793c612-a9e5-4c3a-b517-01ab4d98429a" />
+<img width="1440" height="900" alt="2" src="https://github.com/user-attachments/assets/00ac9dc9-c35b-419c-8914-88dd34241955" />
+<img width="1440" height="900" alt="3" src="https://github.com/user-attachments/assets/58abe630-2456-46e8-818c-e5388d9735ad" />
+
+
 ### Step 2 — Create the initial internet policy
 
 Go to **Policy & Objects > Firewall Policy**, click **Create New**, and set:
