@@ -80,7 +80,7 @@ Go to **Policy & Objects > Firewall Policy**, click **Create New**, and set:
 | NAT | Enabled, Use Outgoing Interface Address |
 | Log Allowed Traffic | All Sessions |
 
-<img width="1440" height="900" alt="3" src="https://github.com/user-attachments/assets/58abe630-2456-46e8-818c-e5388d9735ad" />
+<img width="1440" height="900" alt="4" src="https://github.com/user-attachments/assets/eb0e6e56-316c-48e1-b360-a25c43195206" />
 
 Outgoing-interface NAT changes `10.~~.10.10` to the address on `wan1` and tracks a translated source port. Replies are mapped back to the original PC session.
 
