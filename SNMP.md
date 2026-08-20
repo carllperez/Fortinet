@@ -1,4 +1,4 @@
-# FortiGate 60F — SNMP Monitoring
+<img width="1440" height="867" alt="2" src="https://github.com/user-attachments/assets/bc997ea4-73da-4785-ac51-e74735478076" /># FortiGate 60F — SNMP Monitoring
 
 | | |
 |---|---|
@@ -37,6 +37,9 @@ SNMP lets a monitoring server query FortiGate counters and receive event traps. 
 
 Go to **System > SNMP**. Enable the SNMP Agent and set meaningful Description, Location, and Contact values.
 
+<img width="1440" height="867" alt="1" src="https://github.com/user-attachments/assets/e4b803be-01c5-4930-b1c2-a0261acc4b23" />
+
+
 ### Step 2 — Create the v2c community
 
 Under the SNMP v1/v2c table, click **Create New** and configure:
@@ -53,7 +56,7 @@ Under the SNMP v1/v2c table, click **Create New** and configure:
 | v2c Traps | Enabled, destination port 162 |
 | Events | Interface, system, HA, and other lab-relevant events |
 
-> **Screenshot:** System > SNMP showing the restricted v2c community and host.
+<img width="1440" height="867" alt="2" src="https://github.com/user-attachments/assets/c0f584b9-1b30-4a3e-a022-3d4e690c5d0b" />
 
 ### Step 3 — Permit SNMP on the interface
 
@@ -63,6 +66,9 @@ Under the SNMP v1/v2c table, click **Create New** and configure:
 4. Save.
 
 This controls access to the FortiGate itself. A normal transit firewall policy is not what enables SNMP polling of the interface address.
+
+<img width="1440" height="867" alt="3" src="https://github.com/user-attachments/assets/21166b0f-063d-4898-8293-7744f8a9531d" />
+
 
 ## Verification
 
