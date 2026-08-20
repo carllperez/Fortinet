@@ -131,6 +131,9 @@ show ip interface brief
 
 On a client, release and renew the lease, then verify all values: address, `/24` mask, gateway `10.~~.10.4`, DNS `10.~~.1.10`, and lease duration.
 
+<img width="1435" height="862" alt="1" src="https://github.com/user-attachments/assets/96b05a58-99fa-4c86-81de-1eaad95283a1" />
+
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
