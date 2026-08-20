@@ -30,6 +30,9 @@ This lab records and tests two safe local examples:
 
 Go to **Security Fabric > Automation**. FortiOS 7.0 commonly includes default stitches such as Network Down, Reboot, HA Failover, or License Expiry Notification. Review them before creating duplicates.
 
+<img width="1440" height="900" alt="1" src="https://github.com/user-attachments/assets/d3e15cb1-cffb-48dd-b7ae-6b9bac09ed11" />
+
+
 ### Step 2 — Create an interface-down trigger
 
 1. Click **Create New**.
@@ -38,6 +41,9 @@ Go to **Security Fabric > Automation**. FortiOS 7.0 commonly includes default st
 4. Add a field filter for the unused test interface when the GUI exposes interface fields.
 
 Do not hardcode a log ID copied from another firmware build. Selecting the event by description in the FortiOS 7.0 GUI keeps the trigger aligned with that device's log schema.
+
+<img width="1440" height="900" alt="2" src="https://github.com/user-attachments/assets/57a95699-9e40-4b2e-84cd-08d1d878977a" />
+
 
 ### Step 3 — Add a local action
 
@@ -51,7 +57,9 @@ get system status
 
 Name the action `Record-Lab-Status`, attach it to the stitch, and enable the stitch.
 
-> **Screenshot:** Automation stitch showing `Lab-Interface-Down` connected to `Record-Lab-Status`.
+<img width="1440" height="900" alt="3" src="https://github.com/user-attachments/assets/0ff938a0-b55f-4731-8d4d-2fe3b9f765b4" />
+<img width="1440" height="900" alt="4" src="https://github.com/user-attachments/assets/62aaef93-5d23-4d4e-900d-4bfc8fd9b1c5" />
+<img width="1440" height="900" alt="5" src="https://github.com/user-attachments/assets/9c55b978-4cd2-43cf-80e1-16e207e2602f" />
 
 Automation activation and action results are recorded in FortiGate event/automation history. There is no need to invent a separate generic “write log” action when the selected 7.0 GUI does not offer one.
 
@@ -60,6 +68,10 @@ Automation activation and action results are recorded in FortiGate event/automat
 Create another stitch with the **Configuration Change** trigger. For the first lab, attach only a local notification or the same read-only CLI Script action. Do not attach a script that reverts all configuration changes; that can create loops and lock out administrators.
 
 > Gotcha: a CLI Script action runs with appliance privileges and without an interactive reviewer. Treat it like configuration automation, not a convenient scratchpad.
+
+<img width="1440" height="900" alt="6" src="https://github.com/user-attachments/assets/cbfef1a7-bf59-428d-94b6-be6a7708ab17" />
+<img width="1440" height="900" alt="7" src="https://github.com/user-attachments/assets/c92ef555-a1aa-4b4d-a4e7-539a8605807a" />
+
 
 ## Verification
 
