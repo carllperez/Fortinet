@@ -1,4 +1,4 @@
-<img width="1440" height="867" alt="2" src="https://github.com/user-attachments/assets/bc997ea4-73da-4785-ac51-e74735478076" /># FortiGate 60F — SNMP Monitoring
+# FortiGate 60F — SNMP Monitoring
 
 | | |
 |---|---|
