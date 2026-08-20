@@ -45,7 +45,9 @@ Traffic shaping controls bandwidth after a firewall policy has accepted a sessio
 5. Leave Guaranteed Bandwidth at `0` for a strict camera cap.
 6. Set Priority to Low and save.
 
-> **Screenshot:** Shared shaper `Cameras-5Mbps` with a 5000 Kbps maximum.
+<img width="1440" height="867" alt="1" src="https://github.com/user-attachments/assets/6a7c649d-3147-4f8b-ae6f-daa96338f03c" />
+<img width="1440" height="867" alt="2" src="https://github.com/user-attachments/assets/21ef7983-c4c3-49fb-a4d0-67f912f0354e" />
+
 
 ### Step 2 — Apply it with a shaping policy
 
@@ -60,6 +62,10 @@ In **Policy & Objects > Traffic Shaping**, open **Traffic Shaping Policies** and
 | Shared Shaper | `Cameras-5Mbps` |
 
 Place specific shaping rules above general ones. FortiGate first accepts traffic with a firewall policy and then looks for the first matching shaping policy.
+
+<img width="1440" height="867" alt="3" src="https://github.com/user-attachments/assets/4c02fa3a-3c1a-423a-be8e-1e0a4f370596" />
+<img width="1440" height="867" alt="4" src="https://github.com/user-attachments/assets/06845649-db72-4866-9eee-946375e7aa39" />
+
 
 ### Step 3 — Compare a per-IP shaper
 
