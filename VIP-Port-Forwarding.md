@@ -50,7 +50,8 @@ From another LAN device, open `http://10.~~.~~.10`. If this fails, fix the serve
 | External Service Port | `8080` |
 | Map to Port | `80` |
 
-> **Screenshot:** Virtual IP showing external TCP 8080 mapped to server TCP 80.
+<img width="1440" height="867" alt="1" src="https://github.com/user-attachments/assets/99144c33-080d-46fd-a4b4-5c88a5b91c10" />
+<img width="1440" height="867" alt="2" src="https://github.com/user-attachments/assets/1d5b5356-f2db-4660-91a1-af719cd52584" />
 
 Using `wan1` limits the VIP to the intended ingress interface. If the external IP is not assigned to the FortiGate itself, the upstream network must still route or ARP that address toward it.
 
@@ -74,6 +75,7 @@ Under **Policy & Objects > Firewall Policy**, create:
 The VIP performs DNAT before the forward-policy service check, so the narrow policy service is the mapped/internal service, TCP 80. Do not use a custom TCP/8080 policy service for this 8080-to-80 mapping; that policy will not match after DNAT. Policy NAT is normally off so the server sees the real external source. The server must return through the FortiGate; otherwise enable source NAT only as a deliberate workaround for an asymmetric return path.
 
 > Gotcha: the policy destination is the VIP object, not the server's private address object.
+<img width="1440" height="867" alt="3" src="https://github.com/user-attachments/assets/bf0b16ab-d914-4612-884e-2181419103e9" />
 
 ## Testing
 
