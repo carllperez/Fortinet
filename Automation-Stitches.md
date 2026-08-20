@@ -1,4 +1,4 @@
-# FortiGate 60F — Local Automation Stitches
+<img width="1440" height="870" alt="7" src="https://github.com/user-attachments/assets/b0f03753-e35e-4480-adda-e453718dc2ef" /># FortiGate 60F — Local Automation Stitches
 
 | | |
 |---|---|
@@ -40,7 +40,7 @@ Go to **Security Fabric > Automation**. FortiOS 7.0 commonly includes default st
 
 Do not hardcode a log ID copied from another firmware build. Selecting the event by description in the FortiOS 7.0 GUI keeps the trigger aligned with that device's log schema.
 
-<img width="1440" height="900" alt="1" src="https://github.com/user-attachments/assets/d3e15cb1-cffb-48dd-b7ae-6b9bac09ed11" />
+<img width="1440" height="867" alt="1" src="https://github.com/user-attachments/assets/e1874b5c-c172-49d9-ae8b-6a7a754bb4c1" />
 
 
 ### Step 3 — Add a local action
@@ -55,10 +55,11 @@ get system status
 
 Name the action `Record-Lab-Status`, attach it to the stitch, and enable the stitch.
 
-<img width="1440" height="900" alt="2" src="https://github.com/user-attachments/assets/57a95699-9e40-4b2e-84cd-08d1d878977a" />
-<img width="1440" height="900" alt="3" src="https://github.com/user-attachments/assets/0ff938a0-b55f-4731-8d4d-2fe3b9f765b4" />
-<img width="1440" height="900" alt="4" src="https://github.com/user-attachments/assets/62aaef93-5d23-4d4e-900d-4bfc8fd9b1c5" />
-<img width="1440" height="900" alt="5" src="https://github.com/user-attachments/assets/9c55b978-4cd2-43cf-80e1-16e207e2602f" />
+<img width="1440" height="870" alt="2" src="https://github.com/user-attachments/assets/ad3bf563-21fb-4dd8-a09b-9d2b73b13443" />
+<img width="1440" height="866" alt="3" src="https://github.com/user-attachments/assets/a532b2fc-df9a-4cee-8d7f-edbc48c6e82e" />
+<img width="1440" height="869" alt="4" src="https://github.com/user-attachments/assets/0b4d3955-17fd-40d7-8a0f-0fe0ff07928f" />
+<img width="1440" height="870" alt="5" src="https://github.com/user-attachments/assets/ad2b43ce-e0b1-4bde-a3b9-d57263b29728" />
+
 
 Automation activation and action results are recorded in FortiGate event/automation history. There is no need to invent a separate generic “write log” action when the selected 7.0 GUI does not offer one.
 
@@ -68,8 +69,8 @@ Create another stitch with the **Configuration Change** trigger. For the first l
 
 > Gotcha: a CLI Script action runs with appliance privileges and without an interactive reviewer. Treat it like configuration automation, not a convenient scratchpad.
 
-<img width="1440" height="900" alt="6" src="https://github.com/user-attachments/assets/cbfef1a7-bf59-428d-94b6-be6a7708ab17" />
-<img width="1440" height="900" alt="7" src="https://github.com/user-attachments/assets/c92ef555-a1aa-4b4d-a4e7-539a8605807a" />
+<img width="1440" height="869" alt="6" src="https://github.com/user-attachments/assets/725f07b5-a6a0-4ed1-a72c-2c206db6ad86" />
+<img width="1440" height="870" alt="7" src="https://github.com/user-attachments/assets/c10eeff0-9c76-462a-a3c4-063d0d0db64c" />
 
 
 ## Verification
